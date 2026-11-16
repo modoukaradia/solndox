@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SolNdox – Tableau de Bord Intelligent (Niayes)</title>
+  <style>
+    :root {
+      --bg: #f4f7f2;
+      --card: #ffffff;
+      --text: #1b2a1f;
+      --muted: #5c6f61;
+      --green: #1f7a44;
+      --green-light: #e6f5ec;
+      --orange: #e67e22;
+      --orange-light: #fef3e6;
+      --red: #c0392b;
+      --red-light: #fdecea;
+      --blue: #1d6fa5;
+      --blue-light: #e8f4fc;
+      --border: #dce5dc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 18px; line-height: 1.45; }
+    .container { max-width: 1180px; margin: 0 auto; }
+
+    header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      background: #173a25; color: #fff; padding: 16px 22px; border-radius: 14px; margin-bottom: 16px;
+    }
+    header h1 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+    .badge { background: var(--orange); color: #fff; font-size: 0.78rem; padding: 4px 10px; border-radius: 20px; font-weight: 700; }
+    .sub { font-size: 0.88rem; color: #cde2d3; margin-top: 3px; }
+
+    .controls {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px; margin-bottom: 16px;
+    }
+    .controls-title { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); font-weight: 700; margin-bottom: 10px; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    button {
+      border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-weight: 600;
+      font-size: 0.86rem; transition: transform 0.1s, opacity 0.15s;
+    }
+    button:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-ok { background: #e8efe9; color: var(--text); }
+    .btn-sec { background: var(--green); color: #fff; }
+    .btn-fuite { background: var(--red); color: #fff; }
+    .btn-bouch { background: #d35400; color: #fff; }
+    .btn-puits { background: #8e44ad; color: #fff; }
+    .btn-pluie { background: var(--blue); color: #fff; }
+
+    .banner {
+      padding: 15px 18px; border-radius: 12px; margin-bottom: 16px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+      border-left: 6px solid var(--green); background: var(--green-light);
+    }
+    .banner.warn { border-left-color: var(--blue); background: var(--blue-light); }
+    .banner.danger { border-left-color: var(--red); background: var(--red-light); }
+    .banner h2 { font-size: 1.12rem; margin-bottom: 3px; }
+    .banner p { font-size: 0.9rem; color: #2b3a2e; }
+
+    .grid-kpi {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 12px; margin-bottom: 16px;
+    }
+    .kpi {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+    }
+    .kpi-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+    .kpi-val { font-size: 1.55rem; font-weight: 800; margin: 4px 0; color: var(--text); }
+    .kpi-sub { font-size: 0.8rem; color: var(--muted); }
+
+    .grid-2 { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 850px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+    .sms-box {
+      background: #f0f4f1; border-radius: 10px; padding: 12px 14px; border: 1px dashed #9eb5a3; margin-bottom: 10px;
+    }
+    .sms-lang { display: flex; gap: 6px; margin-bottom: 8px; }
+    .lang-btn { padding: 4px 10px; font-size: 0.76rem; background: #dde6df; color: var(--text); border-radius: 6px; }
+    .lang-btn.active { background: var(--green); color: #fff; }
+    .tech-box {
+      background: var(--orange-light); border-left: 4px solid var(--orange);
+      padding: 10px 12px; border-radius: 8px; font-size: 0.86rem; margin-top: 10px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; }
+    .pill { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+    .pill-paid { background: var(--green-light); color: var(--green); }
+    .pill-wait { background: var(--red-light); color: var(--red); }
+
+    .log-list { max-height: 150px; overflow-y: auto; font-size: 0.82rem; color: var(--muted); }
+    .log-item { padding: 5px 0; border-bottom: 1px solid #eef2ee; }
+    .audio-zone { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 0.82rem; }
+    audio { width: 100%; height: 34px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>🌱 SolNdox <span class="badge">Station Mutualisée · Niayes</span></h1>
+      <div class="sub">Irrigation Solaire, Fertigation Venturi, Anticipation Météo &amp; Surveillance des Puits</div>
+    </div>
+    <div style="text-align:right; font-size:0.85rem;">
+      <div><strong>GIE Keur Maraîchers (5 producteurs · 1 ha)</strong></div>
+      <div style="color:#cde2d3;">Maintenance 100 % incluse · Abonnement Mobile Money</div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="controls-title">🎛️ Simulateur de démonstration en direct (pour le jury)</div>
+    <div class="btn-row">
+      <button class="btn-ok" onclick="setScenario('normal')">1. Sol correct (En attente)</button>
+      <button class="btn-sec" onclick="setScenario('sec')">2. Sol sec : Arrosage + Venturi</button>
+      <button class="btn-fuite" onclick="setScenario('fuite')">3. Simuler Fuite Tuyau</button>
+      <button class="btn-bouch" onclick="setScenario('bouchage')">4. Simuler Bouchage Goutteurs</button>
+      <button class="btn-puits" onclick="setScenario('puits')">5. Simuler Puits Trop Bas</button>
+      <button class="btn-pluie" onclick="setScenario('pluie')">6. Météo : Pluie Demain</button>
+    </div>
+  </div>
+
+  <div id="statusBanner" class="banner">
+    <div>
+      <h2 id="statusTitle">✅ SOL CORRECT — Système en veille</h2>
+      <p id="statusDesc">Humidité optimale. Pompe et vanne arrêtées, aucune perte d’eau ni d’engrais.</p>
+    </div>
+    <div id="badgeAction" class="pill pill-paid" style="font-size:0.85rem; padding:6px 12px;">RÉSEAU SAIN</div>
+  </div>
+
+  <div class="grid-kpi">
+    <div class="kpi">
+      <div class="kpi-label">Humidité du sol</div>
+      <div class="kpi-val" id="kpiHum">48 %</div>
+      <div class="kpi-sub">Seuils : Bas 30% | Haut 80%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Débit &amp; Pression</div>
+      <div class="kpi-val" id="kpiFlow">0 L/m</div>
+      <div class="kpi-sub" id="kpiPress">Pression : 0,0 bar</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Niveau du Puits</div>
+      <div class="kpi-val" id="kpiWell">78 %</div>
+      <div class="kpi-sub" id="kpiWellDist">Distance eau : 30 cm</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Fertigation Venturi</div>
+      <div class="kpi-val" id="kpiVenturi">ARRÊT</div>
+      <div class="kpi-sub">Thé de compost / Engrais filtré</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Météo Locale (Niayes)</div>
+      <div class="kpi-val" id="kpiWeather" style="font-size:1.15rem;">Ensoleillé 29°C</div>
+      <div class="kpi-sub" id="kpiWeatherSub">Solaire : 100 % opérationnel</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>
+        <span>📱 Alertes Producteur (SMS / Vocal)</span>
+        <div class="sms-lang">
+          <button id="btnWolof" class="lang-btn active" onclick="switchLang('wolof')">Wolof</button>
+          <button id="btnFr" class="lang-btn" onclick="switchLang('fr')">Français</button>
+        </div>
+      </h3>
+      <div class="sms-box">
+        <div style="font-size:0.75rem; color:var(--muted); margin-bottom:4px;">Message envoyé aux producteurs du GIE :</div>
+        <div id="smsText" style="font-weight:600; font-size:0.95rem;">« Suuf si baax na. Sistem bi mu ngi xaar. »</div>
+      </div>
+
+      <div class="tech-box" id="techTicket">
+        <strong>🛠️ Maintenance SolNdox (Incluse) :</strong> Tout est normal. Aucune intervention requise.
+      </div>
+
+      <div class="audio-zone">
+        <strong>🔊 Lecteur d’alerte vocale réelle (Wolof / Sérère) :</strong><br />
+        <span style="color:var(--muted);">Chargez votre mémo vocal enregistré sur téléphone pour le jouer en direct :</span>
+        <input type="file" id="audioInput" accept="audio/*" style="margin-top:6px;" onchange="loadAudio(event)" />
+        <audio id="audioPlayer" controls></audio>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>
+        <span>💳 Mutualisation GIE &amp; Mobile Money</span>
+        <span style="font-size:0.78rem; color:var(--green);">35 000 FCFA / mois</span>
+      </h3>
+      <table>
+        <thead>
+          <tr><th>Producteur (0,2 ha)</th><th>Conso.</th><th>Statut Wave/OM</th><th>Action</th></tr>
+        </thead>
+        <tbody id="gieTableBody"></tbody>
+      </table>
+      <div style="margin-top:12px;">
+        <div class="controls-title" style="margin-bottom:5px;">Journal des événements en direct</div>
+        <div class="log-list" id="eventLog"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const scenarios = {
+    normal: {
+      bannerClass: "banner",
+      title: "✅ SOL CORRECT — Système en veille",
+      desc: "Humidité optimale (48 %). Pompe et vanne arrêtées, zéro gaspillage.",
+      badge: "RÉSEAU SAIN", badgeColor: "pill-paid",
+      hum: "48 %", flow: "0 L/m", press: "Pression : 0,0 bar",
+      well: "78 %", wellDist: "Distance eau : 30 cm",
+      venturi: "ARRÊT", weather: "Ensoleillé 29°C", weatherSub: "Solaire : 100 % actif",
+      smsWolof: "« Suuf si baax na. Sistem bi mu ngi xaar. »",
+      smsFr: "« Sol à bonne humidité (48 %). Irrigation en attente. »",
+      tech: "<strong>🛠️ Maintenance SolNdox (Incluse) :</strong> Tout est normal. Aucune intervention requise.",
+      beep: false
+    },
+    sec: {
+      bannerClass: "banner",
+      title: "💧 ARROSAGE + FERTIGATION VENTURI ACTIFS",
+      desc: "Sol sec (< 30 %). La vanne s’ouvre automatiquement et dose le thé de compost aux racines.",
+      badge: "ARROSAGE EN COURS", badgeColor: "pill-paid",
+      hum: "22 %", flow: "18 L/m", press: "Pression : 0,3 bar",
+      well: "74 %", wellDist: "Distance eau : 34 cm",
+      venturi: "ACTIF 🌿", weather: "Chaud 33°C", weatherSub: "Vent sec : dose adaptée",
+      smsWolof: "« Suuf si dafa wow. Arrosage ak engrais tàmbali nañu. »",
+      smsFr: "« Sol sec (22 %). Arrosage + fertigation Venturi démarrés automatiquement. »",
+      tech: "<strong>🛠️ Maintenance SolNdox (Incluse) :</strong> Débit et pression stables. Ras.",
+      beep: false
+    },
+    fuite: {
+      bannerClass: "banner danger",
+      title: "🚨 ALERTE FUITE — Vanne coupée automatiquement !",
+      desc: "Hausse brutale du débit et chute de pression : tuyau percé ou déboîté. Eau coupée.",
+      badge: "VANNE COUPÉE", badgeColor: "pill-wait",
+      hum: "35 %", flow: "42 L/m ⚠️", press: "Pression : 0,08 bar",
+      well: "71 %", wellDist: "Distance eau : 38 cm",
+      venturi: "COUPÉ", weather: "Ensoleillé 29°C", weatherSub: "Sécurité hydraulique active",
+      smsWolof: "« Alerte ! Tuyau bi dafa sotti (fuite). Vanne bi tëj na, technicien SolNdox mu ngi ñëw. »",
+      smsFr: "« Alerte fuite sur parcelle ! Vanne coupée automatiquement, technicien SolNdox prévenu. »",
+      tech: "<strong>🛠️ Ticket envoyé au Technicien SolNdox :</strong> Intervention programmée sur la station GIE (incluse dans l'abonnement).",
+      beep: true
+    },
+    bouchage: {
+      bannerClass: "banner danger",
+      title: "⚠️ ALERTE BOUCHAGE — Risque colmatage goutteurs",
+      desc: "Baisse anormale du débit pendant l’arrosage. Filtre ou goutteurs encrassés.",
+      badge: "INTERVENTION", badgeColor: "pill-wait",
+      hum: "24 %", flow: "3 L/m ⚠️", press: "Pression : 0,48 bar",
+      well: "75 %", wellDist: "Distance eau : 32 cm",
+      venturi: "PAUSE", weather: "Ensoleillé 30°C", weatherSub: "Sable détecté au filtre",
+      smsWolof: "« Alerte ! Tuyau bi dafa tëj (bouchage). Technicien SolNdox jël na yëgle bi. »",
+      smsFr: "« Baisse de débit détectée (risque bouchage). Technicien SolNdox alerté pour nettoyage filtre. »",
+      tech: "<strong>🛠️ Ticket envoyé au Technicien SolNdox :</strong> Nettoyage du filtre anti-sable et purge planifiés aujourd’hui.",
+      beep: true
+    },
+    puits: {
+      bannerClass: "banner danger",
+      title: "🛑 ALERTE PUITS BAS — Pompage limité",
+      desc: "Le capteur de niveau indique un seuil critique. Pompe mise en pause pour préserver le puits.",
+      badge: "REPOS PUITS", badgeColor: "pill-wait",
+      hum: "27 %", flow: "0 L/m", press: "Pression : 0,0 bar",
+      well: "15 % ⚠️", wellDist: "Distance eau : 92 cm (Critique)",
+      venturi: "PAUSE", weather: "Ensoleillé 31°C", weatherSub: "Protection ressource en eau",
+      smsWolof: "« Alerte ! Ndox mi ci teen bi dafa wàcc. Pompage bi taxaw na ngir aar teen bi. »",
+      smsFr: "« Niveau du puits critique (15 %). Pompage adapté automatiquement pour protéger la ressource. »",
+      tech: "<strong>🛠️ Gestion Ressource :</strong> Pause automatique activée pour laisser la nappe se recharger.",
+      beep: true
+    },
+    pluie: {
+      bannerClass: "banner warn",
+      title: "🌧️ ANTICIPATION MÉTÉO — Arrosage reporté",
+      desc: "Pluie prévue dans les 24h dans les Niayes. SolNdox suspend l’arrosage et protège l’engrais.",
+      badge: "PLUIE DEMAIN", badgeColor: "pill-paid",
+      hum: "28 %", flow: "0 L/m", press: "Pression : 0,0 bar",
+      well: "78 %", wellDist: "Distance eau : 30 cm",
+      venturi: "REPORTÉ", weather: "Pluie prévue 🌧️", weatherSub: "Économie eau & engrais",
+      smsWolof: "« Suba taw na : duñu arroser tey ngir bañ engrais bi perte. »",
+      smsFr: "« Demain pluie : on n’arrose pas aujourd’hui (eau et engrais économisés). »",
+      tech: "<strong>🛠️ Prévention Météo :</strong> Report automatique validé. Aucune perte par lessivage.",
+      beep: false
+    }
+  };
+
+  let currentScenario = "normal";
+  let currentLang = "wolof";
+
+  const farmers = [
+    { name: "Moussa Diop", water: "1 420 L", paid: true },
+    { name: "Fatou Ndiaye", water: "1 380 L", paid: true },
+    { name: "Cheikh Fall", water: "1 510 L", paid: true },
+    { name: "Awa Sarr", water: "1 290 L", paid: false },
+    { name: "Modou Diallo", water: "1 460 L", paid: true }
+  ];
+
+  function playAlertTone() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {}
+  }
+
+  function addLog(msg) {
+    const log = document.getElementById("eventLog");
+    const now = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const div = document.createElement("div");
+    div.className = "log-item";
+    div.textContent = `[${now}] ${msg}`;
+    log.prepend(div);
+  }
+
+  function renderText() {
+    const s = scenarios[currentScenario];
+    document.getElementById("smsText").textContent = currentLang === "wolof" ? s.smsWolof : s.smsFr;
+  }
+
+  function switchLang(lang) {
+    currentLang = lang;
+    document.getElementById("btnWolof").classList.toggle("active", lang === "wolof");
+    document.getElementById("btnFr").classList.toggle("active", lang === "fr");
+    renderText();
+  }
+
+  function setScenario(key) {
+    currentScenario = key;
+    const s = scenarios[key];
+    const banner = document.getElementById("statusBanner");
+    banner.className = s.bannerClass;
+    document.getElementById("statusTitle").textContent = s.title;
+    document.getElementById("statusDesc").textContent = s.desc;
+
+    const badge = document.getElementById("badgeAction");
+    badge.textContent = s.badge;
+    badge.className = `pill ${s.badgeColor}`;
+
+    document.getElementById("kpiHum").textContent = s.hum;
+    document.getElementById("kpiFlow").textContent = s.flow;
+    document.getElementById("kpiPress").textContent = s.press;
+    document.getElementById("kpiWell").textContent = s.well;
+    document.getElementById("kpiWellDist").textContent = s.wellDist;
+    document.getElementById("kpiVenturi").textContent = s.venturi;
+    document.getElementById("kpiWeather").textContent = s.weather;
+    document.getElementById("kpiWeatherSub").textContent = s.weatherSub;
+    document.getElementById("techTicket").innerHTML = s.tech;
+
+    renderText();
+    addLog(s.title);
+    if (s.beep) playAlertTone();
+  }
+
+  function togglePayment(idx) {
+    farmers[idx].paid = !farmers[idx].paid;
+    renderFarmers();
+    addLog(`${farmers[idx].name} : statut Mobile Money mis à jour (${farmers[idx].paid ? "Payé" : "Ligne en veille"})`);
+  }
+
+  function renderFarmers() {
+    const body = document.getElementById("gieTableBody");
+    body.innerHTML = "";
+    farmers.forEach((f, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${f.name}</strong></td>
+        <td>${f.water}</td>
+        <td><span class="pill ${f.paid ? "pill-paid" : "pill-wait"}">${f.paid ? "Wave OK" : "En pause"}</span></td>
+        <td><button style="padding:4px 8px; font-size:0.75rem; background:#e8efe9;" onclick="togglePayment(${i})">${f.paid ? "Simuler impayé" : "Valider Wave"}</button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function loadAudio(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const player = document.getElementById("audioPlayer");
+      player.src = URL.createObjectURL(file);
+      addLog(`Audio vocal chargé : ${file.name}`);
+    }
+  }
+
+  renderFarmers();
+  setScenario("normal");
+</script>
+</body>
+</html>
