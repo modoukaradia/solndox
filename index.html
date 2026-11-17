@@ -2,382 +2,196 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SolNdox – Station d'Irrigation Intelligente</title>
 
-  <!-- Vue.js -->
+  <!-- Bibliothèques Vue.js et MQTT -->
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-
-  <!-- MQTT -->
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
   <style>
     :root {
-      --bg: #f4f7f2;
-      --card: #ffffff;
-      --text: #1b2a1f;
-      --muted: #5c6f61;
-      --green: #1f7a44;
-      --green-light: #e6f5ec;
-      --orange: #e67e22;
-      --orange-light: #fef3e6;
-      --red: #c0392b;
-      --red-light: #fdecea;
-      --blue: #1d6fa5;
-      --blue-light: #e8f4fc;
-      --border: #dce5dc;
+      --bg:#f4f7f2; --card:#fff; --text:#1b2a1f;
+      --muted:#5c6f61; --green:#1f7a44; --green-light:#e6f5ec;
+      --orange:#e67e22; --orange-light:#fef3e6;
+      --red:#c0392b; --red-light:#fdecea;
+      --blue:#1d6fa5; --blue-light:#e8f4fc;
+      --border:#dce5dc;
     }
 
-    [v-cloak] { display: none; }
-
+    [v-cloak] { display:none; }
     * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      box-sizing:border-box; margin:0; padding:0;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     }
-
     body {
-      background: var(--bg);
-      color: var(--text);
-      padding: 18px;
-      line-height: 1.45;
+      background:var(--bg); color:var(--text);
+      padding:18px; line-height:1.45;
     }
-
-    .container {
-      max-width: 1180px;
-      margin: 0 auto;
-    }
+    .container { max-width:1180px; margin:0 auto; }
 
     header {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      background: #173a25;
-      color: #fff;
-      padding: 16px 22px;
-      border-radius: 14px;
-      margin-bottom: 16px;
+      display:flex; flex-wrap:wrap; justify-content:space-between;
+      align-items:center; gap:12px; background:#173a25;
+      color:#fff; padding:16px 22px; border-radius:14px;
+      margin-bottom:16px;
     }
-
     header h1 {
-      font-size: 1.4rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
+      font-size:1.4rem; display:flex; align-items:center;
+      gap:10px; flex-wrap:wrap;
     }
-
     .badge {
-      background: var(--orange);
-      color: #fff;
-      font-size: 0.78rem;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-weight: 700;
+      background:var(--orange); color:#fff; font-size:.78rem;
+      padding:4px 10px; border-radius:20px; font-weight:700;
     }
-
     .wokwi-link {
-      display: inline-block;
-      margin-top: 6px;
-      background: #26603e;
-      color: #fff;
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      border: 1px solid #498d64;
+      display:inline-block; margin-top:6px; background:#26603e;
+      color:#fff; text-decoration:none; padding:6px 12px;
+      border-radius:8px; font-size:.82rem; font-weight:600;
+      border:1px solid #498d64;
     }
+    .wokwi-link:hover { background:#2f754c; }
 
-    .wokwi-link:hover { background: #2f754c; }
-
-    .controls, .card, .kpi {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 15px;
+    .controls,.card,.kpi {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:12px; padding:15px;
     }
-
-    .controls { margin-bottom: 16px; }
-
+    .controls { margin-bottom:16px; }
     .controls-title {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--muted);
-      font-weight: 700;
-      margin-bottom: 10px;
+      font-size:.8rem; text-transform:uppercase;
+      letter-spacing:.5px; color:var(--muted);
+      font-weight:700; margin-bottom:10px;
     }
-
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
+    .btn-row { display:flex; flex-wrap:wrap; gap:8px; }
     button {
-      border: none;
-      padding: 9px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.85rem;
+      border:none; padding:9px 14px; border-radius:8px;
+      cursor:pointer; font-weight:600; font-size:.85rem;
     }
-
-    button:hover { opacity: 0.92; }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
-
-    .btn-normal { background: #e8efe9; color: var(--text); }
-    .btn-sec { background: var(--green); color: #fff; }
-    .btn-fuite { background: var(--red); color: #fff; }
-    .btn-bouchage { background: #d35400; color: #fff; }
-    .btn-puits { background: #8e44ad; color: #fff; }
-    .btn-pluie { background: var(--blue); color: #fff; }
-    .btn-real { background: #173a25; color: #fff; }
+    button:hover { opacity:.92; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .btn-normal { background:#e8efe9; color:var(--text); }
+    .btn-sec { background:var(--green); color:#fff; }
+    .btn-fuite { background:var(--red); color:#fff; }
+    .btn-bouchage { background:#d35400; color:#fff; }
+    .btn-puits { background:#8e44ad; color:#fff; }
+    .btn-pluie { background:var(--blue); color:#fff; }
+    .btn-real { background:#173a25; color:#fff; }
 
     .connection {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 15px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      font-size: 0.86rem;
+      background:#fff; border:1px solid var(--border);
+      border-radius:12px; padding:12px 15px; margin-bottom:16px;
+      display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:10px; font-size:.86rem;
     }
-
     .connection-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
+      display:flex; align-items:center; gap:8px; font-weight:700;
     }
-
     .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-      background: #999;
+      width:10px; height:10px; border-radius:50%;
+      display:inline-block; background:#999;
     }
-
-    .dot.connected { background: var(--green); }
-    .dot.disconnected { background: var(--red); }
-    .dot.waiting { background: var(--orange); }
-
+    .dot.connected { background:var(--green); }
+    .dot.disconnected { background:var(--red); }
+    .dot.waiting { background:var(--orange); }
     .mode-label {
-      display: inline-block;
-      padding: 5px 10px;
-      border-radius: 20px;
-      background: var(--blue-light);
-      color: var(--blue);
-      font-size: 0.78rem;
-      font-weight: 700;
+      display:inline-block; padding:5px 10px; border-radius:20px;
+      background:var(--blue-light); color:var(--blue);
+      font-size:.78rem; font-weight:700;
     }
 
     .banner {
-      padding: 15px 18px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      border-left: 6px solid var(--green);
-      background: var(--green-light);
+      padding:15px 18px; border-radius:12px; margin-bottom:16px;
+      display:flex; flex-wrap:wrap; justify-content:space-between;
+      align-items:center; gap:12px; border-left:6px solid var(--green);
+      background:var(--green-light);
     }
-
-    .banner.warn {
-      border-left-color: var(--blue);
-      background: var(--blue-light);
-    }
-
-    .banner.danger {
-      border-left-color: var(--red);
-      background: var(--red-light);
-    }
+    .banner.warn { border-left-color:var(--blue); background:var(--blue-light); }
+    .banner.danger { border-left-color:var(--red); background:var(--red-light); }
 
     .grid-kpi {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr));
+      gap:12px; margin-bottom:16px;
     }
-
     .kpi-label {
-      font-size: 0.78rem;
-      color: var(--muted);
-      font-weight: 600;
-      text-transform: uppercase;
+      font-size:.78rem; color:var(--muted); font-weight:600;
+      text-transform:uppercase;
     }
-
-    .kpi-val {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin: 4px 0;
-    }
-
-    .kpi-sub {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
+    .kpi-val { font-size:1.5rem; font-weight:800; margin:4px 0; }
+    .kpi-sub { font-size:.8rem; color:var(--muted); }
 
     .grid-2 {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 16px;
+      display:grid; grid-template-columns:1.1fr .9fr; gap:16px;
     }
-
-    @media (max-width: 850px) {
-      .grid-2 { grid-template-columns: 1fr; }
+    @media(max-width:850px) { .grid-2 { grid-template-columns:1fr; } }
+    @media(max-width:520px) {
+      body { padding:10px; }
+      header { padding:14px; }
+      header h1 { font-size:1.2rem; }
     }
 
     .card h3 {
-      font-size: 1rem;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px;
+      font-size:1rem; margin-bottom:10px; display:flex;
+      justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:8px;
     }
-
     .sms-box {
-      background: #f0f4f1;
-      border-radius: 10px;
-      padding: 12px 14px;
-      border: 1px dashed #9eb5a3;
-      margin-bottom: 10px;
+      background:#f0f4f1; border-radius:10px; padding:12px 14px;
+      border:1px dashed #9eb5a3; margin-bottom:10px;
     }
-
     .lang-btn {
-      padding: 4px 10px;
-      font-size: 0.76rem;
-      background: #dde6df;
-      color: var(--text);
-      border-radius: 6px;
-      margin-left: 4px;
+      padding:4px 10px; font-size:.76rem; background:#dde6df;
+      color:var(--text); border-radius:6px; margin-left:4px;
     }
-
-    .lang-btn.active {
-      background: var(--green);
-      color: #fff;
-    }
-
+    .lang-btn.active { background:var(--green); color:#fff; }
     .tech-box {
-      background: var(--orange-light);
-      border-left: 4px solid var(--orange);
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: 0.86rem;
-      margin-top: 10px;
+      background:var(--orange-light); border-left:4px solid var(--orange);
+      padding:10px 12px; border-radius:8px; font-size:.86rem; margin-top:10px;
     }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 8px 6px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      color: var(--muted);
-      font-size: 0.76rem;
-      text-transform: uppercase;
-    }
-
+    table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    th,td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--border); }
+    th { color:var(--muted); font-size:.76rem; text-transform:uppercase; }
     .pill {
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      display: inline-block;
+      padding:3px 8px; border-radius:12px; font-size:.75rem;
+      font-weight:700; display:inline-block;
     }
-
-    .pill-paid {
-      background: var(--green-light);
-      color: var(--green);
-    }
-
-    .pill-wait {
-      background: var(--red-light);
-      color: var(--red);
-    }
-
+    .pill-paid { background:var(--green-light); color:var(--green); }
+    .pill-wait { background:var(--red-light); color:var(--red); }
     .log-list {
-      max-height: 140px;
-      overflow-y: auto;
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 8px;
+      max-height:140px; overflow-y:auto; font-size:.8rem;
+      color:var(--muted); margin-top:8px;
     }
-
-    .log-item {
-      padding: 4px 0;
-      border-bottom: 1px solid #eef2ee;
-    }
-
+    .log-item { padding:4px 0; border-bottom:1px solid #eef2ee; }
     .audio-zone {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-      font-size: 0.82rem;
+      margin-top:10px; padding-top:10px; border-top:1px solid var(--border);
+      font-size:.82rem;
     }
-
-    audio {
-      width: 100%;
-      height: 34px;
-      margin-top: 6px;
+    audio { width:100%; height:34px; margin-top:6px; }
+    .small-note { color:var(--muted); font-size:.76rem; margin-top:5px; }
+    .table-wrapper { overflow-x:auto; }
+    .mqtt-help {
+      margin-top:8px; font-size:.78rem; color:var(--muted);
     }
-
-    .small-note {
-      color: var(--muted);
-      font-size: 0.76rem;
-      margin-top: 5px;
-    }
-
-    .table-wrapper { overflow-x: auto; }
   </style>
 </head>
 
 <body>
-
 <div id="app" class="container" v-cloak>
 
   <!-- EN-TÊTE -->
   <header>
     <div>
-      <h1>
-        🌱 SolNdox
-        <span class="badge">Vue.js 3 · Station Niayes</span>
-      </h1>
-
-      <div style="font-size:0.88rem; color:#cde2d3; margin-top:3px;">
+      <h1>🌱 SolNdox <span class="badge">Vue.js 3 · Station Niayes</span></h1>
+      <div style="font-size:.88rem;color:#cde2d3;margin-top:3px;">
         Irrigation Solaire, Fertigation Venturi, Anticipation Météo &amp; Surveillance des Puits
       </div>
-
       <a class="wokwi-link"
          href="https://wokwi.com/projects/480874702531380225"
-         target="_blank"
-         rel="noopener">
+         target="_blank" rel="noopener">
         🔌 Ouvrir le simulateur ESP32 (Wokwi)
       </a>
     </div>
-
-    <div style="text-align:right; font-size:0.85rem;">
+    <div style="text-align:right;font-size:.85rem;">
       <div><strong>GIE Maraîchers des Niayes (5 producteurs · 1 ha)</strong></div>
       <div style="color:#cde2d3;">Maintenance 100 % incluse · Wave / Orange Money</div>
     </div>
@@ -392,13 +206,13 @@
         </span>
         <span>Connexion station : {{ mqttStatus }}</span>
       </div>
-
       <div class="small-note">
-        Dernière réception :
-        {{ lastReceivedAt || "Aucune donnée reçue" }}
+        Dernière réception : {{ lastReceivedAt || "Aucune donnée reçue" }}
+      </div>
+      <div class="mqtt-help">
+        Topic : {{ mqttTopic }}
       </div>
     </div>
-
     <div>
       <span class="mode-label">
         {{ sourceMode === 'esp32' ? '📡 DONNÉES ESP32' : '🎛️ SIMULATION' }}
@@ -409,98 +223,66 @@
   <!-- COMMANDES -->
   <div class="controls">
     <div class="controls-title">🎛️ Simulateur de démonstration</div>
-
     <div class="btn-row">
-      <button class="btn-normal" @click="selectScenario('normal')">
-        1. Sol correct
-      </button>
-
-      <button class="btn-sec" @click="selectScenario('sec')">
-        2. Sol sec
-      </button>
-
-      <button class="btn-fuite" @click="selectScenario('fuite')">
-        3. Simuler fuite
-      </button>
-
-      <button class="btn-bouchage" @click="selectScenario('bouchage')">
-        4. Simuler bouchage
-      </button>
-
-      <button class="btn-puits" @click="selectScenario('puits')">
-        5. Simuler puits bas
-      </button>
-
-      <button class="btn-pluie" @click="selectScenario('pluie')">
-        6. Pluie demain
-      </button>
+      <button class="btn-normal" @click="selectScenario('normal')">1. Sol correct</button>
+      <button class="btn-sec" @click="selectScenario('sec')">2. Sol sec</button>
+      <button class="btn-fuite" @click="selectScenario('fuite')">3. Simuler fuite</button>
+      <button class="btn-bouchage" @click="selectScenario('bouchage')">4. Simuler bouchage</button>
+      <button class="btn-puits" @click="selectScenario('puits')">5. Simuler puits bas</button>
+      <button class="btn-pluie" @click="selectScenario('pluie')">6. Pluie demain</button>
     </div>
 
-    <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">
-      <button
-        class="btn-real"
-        @click="afficherDonneesESP32"
-        :disabled="!realData">
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">
+      <button class="btn-real" @click="afficherDonneesESP32" :disabled="!realData">
         📡 Afficher les données ESP32
       </button>
-
       <button class="btn-normal" @click="revenirSimulation">
         🎛️ Revenir à la simulation
       </button>
+    </div>
+    <div class="small-note" v-if="!realData">
+      Le bouton ESP32 sera activé après réception d'un premier message MQTT valide.
     </div>
   </div>
 
   <!-- ÉTAT PRINCIPAL -->
   <div class="banner" :class="current.bannerClass">
     <div>
-      <h2 style="font-size:1.12rem; margin-bottom:3px;">
-        {{ current.title }}
-      </h2>
-      <p style="font-size:0.9rem;">{{ current.desc }}</p>
+      <h2 style="font-size:1.12rem;margin-bottom:3px;">{{ current.title }}</h2>
+      <p style="font-size:.9rem;">{{ current.desc }}</p>
     </div>
-
-    <div class="pill"
-         :class="current.badgeClass"
-         style="font-size:0.85rem; padding:6px 12px;">
+    <div class="pill" :class="current.badgeClass" style="font-size:.85rem;padding:6px 12px;">
       {{ current.badge }}
     </div>
   </div>
 
   <!-- INDICATEURS -->
   <div class="grid-kpi">
-
     <div class="kpi">
       <div class="kpi-label">Humidité du sol</div>
       <div class="kpi-val">{{ current.hum }}</div>
       <div class="kpi-sub">Seuils : Bas 30 % | Haut 80 %</div>
     </div>
-
     <div class="kpi">
       <div class="kpi-label">Débit / Pression</div>
       <div class="kpi-val">{{ current.flow }}</div>
       <div class="kpi-sub">{{ current.press }}</div>
     </div>
-
     <div class="kpi">
       <div class="kpi-label">Niveau du puits</div>
       <div class="kpi-val">{{ current.well }}</div>
       <div class="kpi-sub">{{ current.wellDist }}</div>
     </div>
-
     <div class="kpi">
       <div class="kpi-label">Fertigation Venturi</div>
       <div class="kpi-val">{{ current.venturi }}</div>
       <div class="kpi-sub">{{ current.venturiSub }}</div>
     </div>
-
     <div class="kpi">
       <div class="kpi-label">Météo locale (Niayes)</div>
-      <div class="kpi-val" style="font-size:1.15rem;">
-        {{ current.weather }}
-      </div>
+      <div class="kpi-val" style="font-size:1.15rem;">{{ current.weather }}</div>
       <div class="kpi-sub">{{ current.weatherSub }}</div>
     </div>
-
   </div>
 
   <!-- PARTIE INFÉRIEURE -->
@@ -510,48 +292,27 @@
     <div class="card">
       <h3>
         <span>📱 Alertes Producteur (SMS / Vocal)</span>
-
         <div>
-          <button class="lang-btn"
-                  :class="{ active: lang === 'wolof' }"
-                  @click="lang = 'wolof'">
-            Wolof
-          </button>
-
-          <button class="lang-btn"
-                  :class="{ active: lang === 'fr' }"
-                  @click="lang = 'fr'">
-            Français
-          </button>
+          <button class="lang-btn" :class="{active:lang==='wolof'}" @click="lang='wolof'">Wolof</button>
+          <button class="lang-btn" :class="{active:lang==='fr'}" @click="lang='fr'">Français</button>
         </div>
       </h3>
 
       <div class="sms-box">
-        <div style="font-size:0.75rem; color:var(--muted); margin-bottom:4px;">
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px;">
           Message affiché au GIE :
         </div>
-
-        <div style="font-weight:600; font-size:0.95rem;">
-          {{ smsDisplay }}
-        </div>
+        <div style="font-weight:600;font-size:.95rem;">{{ smsDisplay }}</div>
       </div>
 
       <div class="tech-box">
-        <strong>🛠️ Maintenance SolNdox :</strong>
-        {{ current.tech }}
+        <strong>🛠️ Maintenance SolNdox :</strong> {{ current.tech }}
       </div>
 
       <div class="audio-zone">
         <strong>🔊 Lecteur d’alerte vocale (Wolof / Sérère) :</strong>
-        <br />
-
-        <input
-          type="file"
-          accept="audio/*"
-          style="margin-top:6px;"
-          @change="onAudioChange"
-        />
-
+        <br>
+        <input type="file" accept="audio/*" style="margin-top:6px;" @change="onAudioChange">
         <audio v-if="audioUrl" :src="audioUrl" controls></audio>
       </div>
     </div>
@@ -560,9 +321,7 @@
     <div class="card">
       <h3>
         <span>💳 Mutualisation GIE &amp; Mobile Money</span>
-        <span style="font-size:0.78rem; color:var(--green);">
-          35 000 FCFA / mois
-        </span>
+        <span style="font-size:.78rem;color:var(--green);">35 000 FCFA / mois</span>
       </h3>
 
       <div class="table-wrapper">
@@ -575,24 +334,19 @@
               <th>Action</th>
             </tr>
           </thead>
-
           <tbody>
-            <tr v-for="(f, i) in farmers" :key="i">
+            <tr v-for="(f,i) in farmers" :key="i">
               <td><strong>{{ f.name }}</strong></td>
               <td>{{ f.water }}</td>
-
               <td>
-                <span class="pill"
-                      :class="f.paid ? 'pill-paid' : 'pill-wait'">
-                  {{ f.paid ? 'Wave OK' : 'En pause' }}
+                <span class="pill" :class="f.paid?'pill-paid':'pill-wait'">
+                  {{ f.paid?'Wave OK':'En pause' }}
                 </span>
               </td>
-
               <td>
-                <button
-                  style="padding:4px 8px; font-size:0.75rem; background:#e8efe9;"
-                  @click="togglePay(f)">
-                  {{ f.paid ? 'Simuler impayé' : 'Valider Wave' }}
+                <button style="padding:4px 8px;font-size:.75rem;background:#e8efe9;"
+                        @click="togglePay(f)">
+                  {{ f.paid?'Simuler impayé':'Valider Wave' }}
                 </button>
               </td>
             </tr>
@@ -600,29 +354,23 @@
         </table>
       </div>
 
-      <div class="controls-title"
-           style="margin-top:12px; margin-bottom:4px;">
+      <div class="controls-title" style="margin-top:12px;margin-bottom:4px;">
         Journal en direct
       </div>
-
       <div class="log-list">
-        <div class="log-item"
-             v-for="(item, idx) in logs"
-             :key="idx">
-          {{ item }}
-        </div>
+        <div class="log-item" v-for="(item,idx) in logs" :key="idx">{{ item }}</div>
       </div>
     </div>
-
   </div>
 </div>
 
 <script>
 const { createApp } = Vue;
 
-// ==========================================
-// CONFIGURATION MQTT
-// ==========================================
+/* =====================================================
+   CONFIGURATION MQTT
+   Le topic doit être identique dans le programme ESP32.
+   ===================================================== */
 
 const SOLNDOX_MQTT = {
   host: "broker.hivemq.com",
@@ -632,67 +380,70 @@ const SOLNDOX_MQTT = {
 
 let solndoxClient = null;
 
-// ==========================================
-// CONNEXION MQTT
-// ==========================================
+/* =====================================================
+   CONNEXION MQTT
+   Cette fonction est déclarée une seule fois.
+   ===================================================== */
 
 function connecterSolNdox(onData, onStatus, onConnection) {
-
   if (typeof mqtt === "undefined") {
     onStatus("Bibliothèque MQTT indisponible");
+    onConnection(false);
     return;
   }
 
   onStatus("Connexion au serveur MQTT...");
+  onConnection(false);
 
   solndoxClient = mqtt.connect(
     `wss://${SOLNDOX_MQTT.host}:${SOLNDOX_MQTT.port}/mqtt`,
     {
-      clientId: "SolNdoxDashboard" +
-        Math.random().toString(16).slice(2),
-
+      clientId: "SolNdoxDashboard" + Math.random().toString(16).slice(2),
       clean: true,
-      connectTimeout: 10000,
-      reconnectPeriod: 3000
+      connectTimeout: 15000,
+      reconnectPeriod: 3000,
+      keepalive: 30
     }
   );
 
   solndoxClient.on("connect", () => {
-    onStatus("Connecté au serveur MQTT");
+    onStatus("Connecté — abonnement en cours");
     onConnection(true);
 
-    solndoxClient.subscribe(
-      SOLNDOX_MQTT.topic,
-      { qos: 0 },
-      (error) => {
-        if (error) {
-          onStatus("Erreur abonnement MQTT");
-        }
+    solndoxClient.subscribe(SOLNDOX_MQTT.topic, { qos: 0 }, (error) => {
+      if (error) {
+        console.error("Erreur abonnement MQTT :", error);
+        onStatus("Échec de l'abonnement MQTT");
+        return;
       }
-    );
+      onStatus("Connecté — en attente des données ESP32");
+    });
   });
 
   solndoxClient.on("message", (topic, message) => {
-
     if (topic !== SOLNDOX_MQTT.topic) return;
 
     try {
       const data = JSON.parse(message.toString());
 
-      if (
-        typeof data.humidite !== "number" ||
-        typeof data.debit !== "number" ||
-        typeof data.pression_amont !== "number" ||
-        typeof data.pression_aval !== "number"
-      ) {
-        console.warn("Données ESP32 incomplètes :", data);
+      const champsObligatoires = [
+        "humidite", "debit", "pression_amont", "pression_aval"
+      ];
+
+      const donneesValides = champsObligatoires.every((champ) =>
+        typeof data[champ] === "number" && Number.isFinite(data[champ])
+      );
+
+      if (!donneesValides) {
+        console.warn("Données ESP32 invalides ou incomplètes :", data);
+        onStatus("Données ESP32 invalides ou incomplètes");
         return;
       }
 
       onData(data);
-
+      onStatus("Données ESP32 reçues");
     } catch (error) {
-      console.error("Erreur lecture JSON MQTT :", error);
+      console.error("Erreur de lecture JSON MQTT :", error);
       onStatus("Erreur de lecture des données");
     }
   });
@@ -703,254 +454,171 @@ function connecterSolNdox(onData, onStatus, onConnection) {
   });
 
   solndoxClient.on("offline", () => {
-    onStatus("Connexion MQTT hors ligne");
+    onStatus("Serveur MQTT hors ligne");
     onConnection(false);
   });
 
   solndoxClient.on("close", () => {
-    onStatus("Connexion fermée");
+    onStatus("Connexion MQTT fermée");
     onConnection(false);
   });
 
   solndoxClient.on("error", (error) => {
     console.error("Erreur MQTT :", error);
-    onStatus("Erreur MQTT");
+    onStatus("Erreur de connexion MQTT");
     onConnection(false);
   });
 }
 
-// ==========================================
-// APPLICATION VUE
-// ==========================================
+/* =====================================================
+   APPLICATION VUE
+   ===================================================== */
 
-createApp({
-
+const app = createApp({
   data() {
     return {
-
-      wokwiUrl: "https://wokwi.com/projects/480874702531380225",
-
       currentKey: "normal",
       lang: "wolof",
-
       audioUrl: null,
-
       logs: [],
 
       sourceMode: "simulation",
-
       mqttStatus: "Connexion non démarrée",
       mqttConnected: false,
-
+      mqttTopic: SOLNDOX_MQTT.topic,
       realData: null,
       lastReceivedAt: null,
 
       farmers: [
-        { name: "Moussa Diop", water: "1 420 L", paid: true },
-        { name: "Fatou Ndiaye", water: "1 380 L", paid: true },
-        { name: "Cheikh Fall", water: "1 510 L", paid: true },
-        { name: "Awa Sarr", water: "1 290 L", paid: false },
-        { name: "Modou Diallo", water: "1 460 L", paid: true }
+        { name:"Moussa Diop", water:"1 420 L", paid:true },
+        { name:"Fatou Ndiaye", water:"1 380 L", paid:true },
+        { name:"Cheikh Fall", water:"1 510 L", paid:true },
+        { name:"Awa Sarr", water:"1 290 L", paid:false },
+        { name:"Modou Diallo", water:"1 460 L", paid:true }
       ],
 
       scenarios: {
-
         normal: {
-          bannerClass: "",
-          title: "✅ SOL CORRECT — Système en veille",
-          desc: "Humidité optimale (48 %). Pompe et vanne arrêtées, zéro gaspillage.",
-          badge: "RÉSEAU SAIN",
-          badgeClass: "pill-paid",
-          hum: "48 %",
-          flow: "0 L/m",
-          press: "Pression : 0,0 bar",
-          well: "78 %",
-          wellDist: "Distance eau : 30 cm",
-          venturi: "ARRÊT",
-          venturiSub: "Thé de compost / Engrais filtré",
-          weather: "Ensoleillé 29°C",
-          weatherSub: "Solaire : 100 % actif",
-          smsWolof: "« Suuf si baax na. Sistem bi mu ngi xaar. »",
-          smsFr: "« Sol à bonne humidité (48 %). Irrigation en attente. »",
-          tech: "Tout est normal. Aucune intervention requise.",
-          beep: false
+          bannerClass:"",
+          title:"✅ SOL CORRECT — Système en veille",
+          desc:"Humidité optimale (48 %). Pompe et vanne arrêtées, zéro gaspillage.",
+          badge:"RÉSEAU SAIN", badgeClass:"pill-paid",
+          hum:"48 %", flow:"0 L/m", press:"Pression : 0,0 bar",
+          well:"78 %", wellDist:"Distance eau : 30 cm",
+          venturi:"ARRÊT", venturiSub:"Thé de compost / Engrais filtré",
+          weather:"Ensoleillé 29°C", weatherSub:"Solaire : 100 % actif",
+          smsWolof:"« Suuf si baax na. Sistem bi mu ngi xaar. »",
+          smsFr:"« Sol à bonne humidité (48 %). Irrigation en attente. »",
+          tech:"Tout est normal. Aucune intervention requise.", beep:false
         },
 
         sec: {
-          bannerClass: "",
-          title: "💧 ARROSAGE + FERTIGATION VENTURI ACTIFS",
-          desc: "Sol sec (< 30 %). La vanne s’ouvre et dose le thé de compost filtré aux racines.",
-          badge: "ARROSAGE ACTIF",
-          badgeClass: "pill-paid",
-          hum: "22 %",
-          flow: "18 L/m",
-          press: "Pression : 0,3 bar",
-          well: "74 %",
-          wellDist: "Distance eau : 34 cm",
-          venturi: "ACTIF 🌿",
-          venturiSub: "Thé de compost / Engrais filtré",
-          weather: "Chaud 33°C",
-          weatherSub: "Dose ajustée à la chaleur",
-          smsWolof: "« Suuf si dafa wow. Arrosage ak engrais tàmbali nañu. »",
-          smsFr: "« Sol sec (22 %). Arrosage + fertigation Venturi démarrés. »",
-          tech: "Débit et pression stables. Aucune anomalie.",
-          beep: false
+          bannerClass:"",
+          title:"💧 ARROSAGE + FERTIGATION VENTURI ACTIFS",
+          desc:"Sol sec (< 30 %). La vanne s’ouvre et dose le thé de compost filtré aux racines.",
+          badge:"ARROSAGE ACTIF", badgeClass:"pill-paid",
+          hum:"22 %", flow:"18 L/m", press:"Pression : 0,3 bar",
+          well:"74 %", wellDist:"Distance eau : 34 cm",
+          venturi:"ACTIF 🌿", venturiSub:"Thé de compost / Engrais filtré",
+          weather:"Chaud 33°C", weatherSub:"Dose ajustée à la chaleur",
+          smsWolof:"« Suuf si dafa wow. Arrosage ak engrais tàmbali nañu. »",
+          smsFr:"« Sol sec (22 %). Arrosage + fertigation Venturi démarrés. »",
+          tech:"Débit et pression stables. Aucune anomalie.", beep:false
         },
 
         fuite: {
-          bannerClass: "danger",
-          title: "🚨 ALERTE FUITE — Vanne coupée automatiquement !",
-          desc: "Hausse du débit et chute de pression : rupture détectée. Eau coupée.",
-          badge: "VANNE COUPÉE",
-          badgeClass: "pill-wait",
-          hum: "35 %",
-          flow: "42 L/m ⚠️",
-          press: "Pression : 0,08 bar",
-          well: "71 %",
-          wellDist: "Distance eau : 38 cm",
-          venturi: "COUPÉ",
-          venturiSub: "Fertigation interrompue",
-          weather: "Ensoleillé 29°C",
-          weatherSub: "Sécurité hydraulique active",
-          smsWolof: "« Alerte ! Tuyau bi dafa sotti (fuite). Vanne bi tëj na, technicien SolNdox mu ngi ñëw. »",
-          smsFr: "« Alerte fuite ! Vanne coupée, technicien SolNdox en route. »",
-          tech: "Ticket envoyé au technicien SolNdox pour réparation incluse.",
-          beep: true
+          bannerClass:"danger",
+          title:"🚨 ALERTE FUITE — Vanne coupée automatiquement !",
+          desc:"Hausse du débit et chute de pression : rupture détectée. Eau coupée.",
+          badge:"VANNE COUPÉE", badgeClass:"pill-wait",
+          hum:"35 %", flow:"42 L/m ⚠️", press:"Pression : 0,08 bar",
+          well:"71 %", wellDist:"Distance eau : 38 cm",
+          venturi:"COUPÉ", venturiSub:"Fertigation interrompue",
+          weather:"Ensoleillé 29°C", weatherSub:"Sécurité hydraulique active",
+          smsWolof:"« Alerte ! Tuyau bi dafa sotti (fuite). Vanne bi tëj na, technicien SolNdox mu ngi ñëw. »",
+          smsFr:"« Alerte fuite ! Vanne coupée, technicien SolNdox en route. »",
+          tech:"Ticket envoyé au technicien SolNdox pour réparation incluse.", beep:true
         },
 
         bouchage: {
-          bannerClass: "danger",
-          title: "⚠️ ALERTE BOUCHAGE — Risque colmatage goutteurs",
-          desc: "Baisse anormale du débit et hausse de pression : filtre ou goutteurs encrassés.",
-          badge: "INTERVENTION",
-          badgeClass: "pill-wait",
-          hum: "24 %",
-          flow: "3 L/m ⚠️",
-          press: "Pression : 0,48 bar",
-          well: "75 %",
-          wellDist: "Distance eau : 32 cm",
-          venturi: "PAUSE",
-          venturiSub: "Fertigation suspendue",
-          weather: "Ensoleillé 30°C",
-          weatherSub: "Encrassement détecté",
-          smsWolof: "« Alerte ! Tuyau bi dafa tëj (bouchage). Technicien SolNdox jël na yëgle bi. »",
-          smsFr: "« Risque de bouchage détecté. Technicien SolNdox alerté pour nettoyage filtre. »",
-          tech: "Nettoyage du filtre lavable et purge planifiés par SolNdox.",
-          beep: true
+          bannerClass:"danger",
+          title:"⚠️ ALERTE BOUCHAGE — Risque colmatage goutteurs",
+          desc:"Baisse anormale du débit et hausse de pression : filtre ou goutteurs encrassés.",
+          badge:"INTERVENTION", badgeClass:"pill-wait",
+          hum:"24 %", flow:"3 L/m ⚠️", press:"Pression : 0,48 bar",
+          well:"75 %", wellDist:"Distance eau : 32 cm",
+          venturi:"PAUSE", venturiSub:"Fertigation suspendue",
+          weather:"Ensoleillé 30°C", weatherSub:"Encrassement détecté",
+          smsWolof:"« Alerte ! Tuyau bi dafa tëj (bouchage). Technicien SolNdox jël na yëgle bi. »",
+          smsFr:"« Risque de bouchage détecté. Technicien SolNdox alerté pour nettoyage filtre. »",
+          tech:"Nettoyage du filtre lavable et purge planifiés par SolNdox.", beep:true
         },
 
         puits: {
-          bannerClass: "danger",
-          title: "🛑 ALERTE PUITS BAS — Pompage limité",
-          desc: "Le capteur de niveau indique un seuil critique. Pompage mis en pause.",
-          badge: "REPOS PUITS",
-          badgeClass: "pill-wait",
-          hum: "27 %",
-          flow: "0 L/m",
-          press: "Pression : 0,0 bar",
-          well: "15 % ⚠️",
-          wellDist: "Distance eau : 92 cm (Critique)",
-          venturi: "PAUSE",
-          venturiSub: "Fertigation suspendue",
-          weather: "Ensoleillé 31°C",
-          weatherSub: "Protection ressource en eau",
-          smsWolof: "« Alerte ! Ndox mi ci teen bi dafa wàcc. Pompage bi taxaw na ngir aar teen bi. »",
-          smsFr: "« Niveau du puits critique (15 %). Pompage adapté pour protéger l'eau. »",
-          tech: "Pause automatique activée pour préserver le puits/forage.",
-          beep: true
+          bannerClass:"danger",
+          title:"🛑 ALERTE PUITS BAS — Pompage limité",
+          desc:"Le capteur de niveau indique un seuil critique. Pompage mis en pause.",
+          badge:"REPOS PUITS", badgeClass:"pill-wait",
+          hum:"27 %", flow:"0 L/m", press:"Pression : 0,0 bar",
+          well:"15 % ⚠️", wellDist:"Distance eau : 92 cm (Critique)",
+          venturi:"PAUSE", venturiSub:"Fertigation suspendue",
+          weather:"Ensoleillé 31°C", weatherSub:"Protection ressource en eau",
+          smsWolof:"« Alerte ! Ndox mi ci teen bi dafa wàcc. Pompage bi taxaw na ngir aar teen bi. »",
+          smsFr:"« Niveau du puits critique (15 %). Pompage adapté pour protéger l'eau. »",
+          tech:"Pause automatique activée pour préserver le puits/forage.", beep:true
         },
 
         pluie: {
-          bannerClass: "warn",
-          title: "🌧️ ANTICIPATION MÉTÉO — Arrosage reporté",
-          desc: "Pluie prévue dans les 24h dans les Niayes. SolNdox reporte l’arrosage et protège l’engrais.",
-          badge: "PLUIE DEMAIN",
-          badgeClass: "pill-paid",
-          hum: "28 %",
-          flow: "0 L/m",
-          press: "Pression : 0,0 bar",
-          well: "78 %",
-          wellDist: "Distance eau : 30 cm",
-          venturi: "REPORTÉ",
-          venturiSub: "Fertigation suspendue",
-          weather: "Pluie prévue 🌧️",
-          weatherSub: "Zéro lessivage d'engrais",
-          smsWolof: "« Suba taw na : duñu arroser tey ngir bañ engrais bi perte. »",
-          smsFr: "« Demain pluie : on n’arrose pas aujourd’hui. »",
-          tech: "Report automatique validé par le contrôleur.",
-          beep: false
+          bannerClass:"warn",
+          title:"🌧️ ANTICIPATION MÉTÉO — Arrosage reporté",
+          desc:"Pluie prévue dans les 24h dans les Niayes. SolNdox reporte l’arrosage et protège l’engrais.",
+          badge:"PLUIE DEMAIN", badgeClass:"pill-paid",
+          hum:"28 %", flow:"0 L/m", press:"Pression : 0,0 bar",
+          well:"78 %", wellDist:"Distance eau : 30 cm",
+          venturi:"REPORTÉ", venturiSub:"Fertigation suspendue",
+          weather:"Pluie prévue 🌧️", weatherSub:"Zéro lessivage d'engrais",
+          smsWolof:"« Suba taw na : duñu arroser tey ngir bañ engrais bi perte. »",
+          smsFr:"« Demain pluie : on n’arrose pas aujourd’hui. »",
+          tech:"Report automatique validé par le contrôleur.", beep:false
         }
-
       }
-
     };
   },
 
-  // ========================================
-  // DONNÉES CALCULÉES
-  // ========================================
-
   computed: {
-
     current() {
-
       if (this.sourceMode === "esp32" && this.realData) {
-
         const d = this.realData;
-
         const alerte = d.alerte || "Aucune";
         const distance = Number(d.distance_eau_cm);
 
         let bannerClass = "";
-
-        if (alerte !== "Aucune") {
-          bannerClass = "danger";
-        } else if (d.pause_pluie) {
-          bannerClass = "warn";
-        }
+        if (alerte !== "Aucune") bannerClass = "danger";
+        else if (d.pause_pluie) bannerClass = "warn";
 
         return {
-
           bannerClass,
-
-          title: d.diagnostic || "Données reçues de la station",
-
-          desc: "Mesures transmises en temps réel par l'ESP32 via MQTT.",
-
-          badge: alerte === "Aucune" ? "STATION CONNECTÉE" : "ALERTE : " + alerte,
-
-          badgeClass: alerte === "Aucune" ? "pill-paid" : "pill-wait",
-
-          hum: d.humidite + " %",
-
-          flow: d.debit + " %",
-
-          press: "Amont : " + d.pression_amont + " % · Aval : " + d.pression_aval + " %",
-
-          well: d.niveau_eau_disponible === true ? "Disponible" : "Critique / indisponible",
-
-          wellDist: distance >= 0
+          title:d.diagnostic || "Données reçues de la station",
+          desc:"Mesures transmises par l'ESP32 via MQTT.",
+          badge:alerte === "Aucune" ? "STATION CONNECTÉE" : "ALERTE : " + alerte,
+          badgeClass:alerte === "Aucune" ? "pill-paid" : "pill-wait",
+          hum:d.humidite + " %",
+          flow:d.debit + " %",
+          press:"Amont : " + d.pression_amont + " % · Aval : " + d.pression_aval + " %",
+          well:d.niveau_eau_disponible === true ? "Disponible" : "Critique / indisponible",
+          wellDist:Number.isFinite(distance) && distance >= 0
             ? "Distance eau : " + distance.toFixed(1) + " cm"
             : "Distance eau : mesure indisponible",
-
-          venturi: "Non instrumenté",
-
-          venturiSub: "Aucune mesure Venturi transmise par l'ESP32",
-
-          weather: "Non mesurée",
-
-          weatherSub: "Aucune API météo connectée",
-
-          smsWolof: "Diagnostic technique disponible en français uniquement.",
-
-          smsFr: "Diagnostic station : " + (d.diagnostic || "En attente"),
-
-          tech: alerte === "Aucune"
+          venturi:"Non instrumenté",
+          venturiSub:"Aucune mesure Venturi transmise par l'ESP32",
+          weather:"Non mesurée",
+          weatherSub:"Aucune API météo connectée",
+          smsWolof:"Message vocal Wolof non configuré pour ce diagnostic réel.",
+          smsFr:"Diagnostic station : " + (d.diagnostic || "En attente"),
+          tech:alerte === "Aucune"
             ? "Aucune anomalie signalée par le contrôleur."
             : "Anomalie signalée : " + alerte + ". Vérification nécessaire.",
-
-          beep: alerte !== "Aucune"
-
+          beep:alerte !== "Aucune"
         };
       }
 
@@ -958,182 +626,114 @@ createApp({
     },
 
     smsDisplay() {
-
       if (this.sourceMode === "esp32" && this.realData) {
         return this.lang === "fr"
           ? "Diagnostic station : " + (this.realData.diagnostic || "En attente")
           : "Message vocal Wolof non configuré pour ce diagnostic réel.";
       }
 
-      return this.lang === "wolof"
-        ? this.current.smsWolof
-        : this.current.smsFr;
+      return this.lang === "wolof" ? this.current.smsWolof : this.current.smsFr;
     }
-
   },
 
-  // ========================================
-  // MÉTHODES
-  // ========================================
-
   methods: {
-
     selectScenario(key) {
-
       this.currentKey = key;
       this.sourceMode = "simulation";
-
       this.addLog("Simulation : " + this.scenarios[key].title);
-
-      if (this.scenarios[key].beep) {
-        this.playBeep();
-      }
+      if (this.scenarios[key].beep) this.playBeep();
     },
 
     revenirSimulation() {
-
       this.sourceMode = "simulation";
-
       this.addLog("Retour au mode simulation.");
     },
 
     afficherDonneesESP32() {
-
       if (!this.realData) {
         this.addLog("Aucune donnée ESP32 reçue pour le moment.");
         return;
       }
-
       this.sourceMode = "esp32";
-
-      this.addLog("Affichage des données réelles de la station.");
+      this.addLog("Affichage des données reçues de la station ESP32.");
     },
 
     recevoirDonneesESP32(data) {
-
       const premiereReception = !this.realData;
-
       this.realData = data;
-
       this.lastReceivedAt = new Date().toLocaleTimeString("fr-FR");
 
       if (premiereReception) {
         this.addLog("Premières données reçues de l'ESP32.");
       }
-
     },
 
     togglePay(f) {
-
       f.paid = !f.paid;
-
       this.addLog(
         `${f.name} : ${f.paid ? "Paiement Wave simulé validé" : "Paiement simulé en pause"}`
       );
     },
 
     onAudioChange(e) {
-
       const file = e.target.files[0];
+      if (!file) return;
 
-      if (file) {
-
-        if (this.audioUrl) {
-          URL.revokeObjectURL(this.audioUrl);
-        }
-
-        this.audioUrl = URL.createObjectURL(file);
-
-        this.addLog("Audio chargé : " + file.name);
-      }
+      if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
+      this.audioUrl = URL.createObjectURL(file);
+      this.addLog("Audio chargé : " + file.name);
     },
 
     addLog(msg) {
-
       const now = new Date().toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
+        hour:"2-digit", minute:"2-digit", second:"2-digit"
       });
-
       this.logs.unshift(`[${now}] ${msg}`);
-
-      if (this.logs.length > 100) {
-        this.logs.pop();
-      }
+      if (this.logs.length > 100) this.logs.pop();
     },
 
     playBeep() {
-
       try {
-
-        const ctx = new (
-          window.AudioContext || window.webkitAudioContext
-        )();
-
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
         osc.frequency.setValueAtTime(660, ctx.currentTime);
-
         gain.gain.setValueAtTime(0.08, ctx.currentTime);
-
         osc.connect(gain);
         gain.connect(ctx.destination);
-
         osc.start();
         osc.stop(ctx.currentTime + 0.25);
-
         osc.onended = () => ctx.close();
-
       } catch (e) {
         console.warn("Audio non disponible :", e);
       }
     }
-
   },
 
-  // ========================================
-  // DÉMARRAGE
-  // ========================================
-
   mounted() {
-
     this.addLog(this.current.title);
 
     connecterSolNdox(
-
-      (data) => {
-        this.recevoirDonneesESP32(data);
-      },
-
-      (status) => {
-        this.mqttStatus = status;
-      },
-
-      (connected) => {
-        this.mqttConnected = connected;
-      }
-
+      (data) => this.recevoirDonneesESP32(data),
+      (status) => { this.mqttStatus = status; },
+      (connected) => { this.mqttConnected = connected; }
     );
-
   },
 
   beforeUnmount() {
-
     if (solndoxClient) {
       solndoxClient.end(true);
+      solndoxClient = null;
     }
 
     if (this.audioUrl) {
       URL.revokeObjectURL(this.audioUrl);
     }
-
   }
+});
 
-}).mount("#app");
-
+app.mount("#app");
 </script>
-
 </body>
 </html>
